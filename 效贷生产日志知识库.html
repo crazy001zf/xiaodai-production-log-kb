@@ -508,7 +508,7 @@ const DATA = {
           {
             scene: "推荐结果枚举",
             desc: "0.不推荐 1.一般推荐 2.强烈推荐",
-            keywords: '"0" OR "1" OR "2"',
+            keywords: '0.不推荐 1.一般推荐 2.强烈推荐',
             sev: "P2"
           }
         ]
@@ -519,7 +519,7 @@ const DATA = {
           {
             scene: "新网前筛",
             desc: "新网前置筛选查询",
-            keywords: '"【新网】前筛查询" and {企业名称}',
+            keywords: '"【新网】前筛查询"   and "江苏跃宏幕墙装饰工程有限公司"',
             sev: "P1"
           }
         ]
@@ -530,7 +530,7 @@ const DATA = {
           {
             scene: "好人贷文件下载",
             desc: "好人贷文件拉取定时任务，默认当天执行，可指定日期如20270402",
-            keywords: '"syncXwHrdDownloadFileJob"',
+            keywords: 'syncXwHrdDownloadFileJob  默认当天  指定日期：20270402   20270401',
             sev: "P2"
           }
         ]
@@ -552,19 +552,19 @@ const DATA = {
           {
             scene: "实时业绩同步",
             desc: "实时业绩同步接口",
-            keywords: '"xw/performance/instant/sync" and {企业名称}',
+            keywords: '"xw/performance/instant/sync" and "河池市宜州区骏腾木业有限公司"',
             sev: "P1"
           },
           {
             scene: "T+1业绩同步",
             desc: "T+1业绩信息回调接口",
-            keywords: '"xw/performanceInfoCallback" and {企业名称}',
+            keywords: '"xw/performanceInfoCallback"  and "桐乡汇峰智能家居有限公司"',
             sev: "P1"
           },
           {
             scene: "业绩通知",
             desc: "业绩通知报文（找到报文后可补推）",
-            keywords: '"REQUEST" and {企业名称} and "creditAmount"',
+            keywords: '"REQUEST" and "广州泽茂机电设备维修有限公司"   and "creditAmount"（找到报文后可补推）',
             sev: "P1"
           }
         ]
@@ -586,7 +586,7 @@ const DATA = {
           {
             scene: "放款通知",
             desc: "放款金额通知，含首次放款金额",
-            keywords: '"performance/instant/sync" and "creditAmount" and "firstLoanAmount"',
+            keywords: '"performance/instant/sync"and" "creditAmount" and "firstLoanAmount"',
             sev: "P0"
           }
         ]
