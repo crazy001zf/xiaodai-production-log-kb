@@ -571,7 +571,7 @@ function renderContent() {
           <tbody>
             ${filteredItems.map((item, i) => `
             <tr>
-              <td><span class="sev sev-${item.sev}">${item.sev}</span>${item.scene}</td>
+              <td>${item.scene}</td>
               <td>
                 <div class="copy-kw" onclick="copyKw(this, '${g.name}-${i}')" title="点击复制">${escapeHtml(item.keywords)}</div>
               </td>
