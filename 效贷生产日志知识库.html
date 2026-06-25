@@ -1,0 +1,874 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>效贷生产日志知识库</title>
+<style>
+:root {
+  --bg: #f0f2f5;
+  --card-bg: #ffffff;
+  --primary: #1677ff;
+  --primary-light: #e6f4ff;
+  --danger: #ff4d4f;
+  --warning: #faad14;
+  --success: #52c41a;
+  --text: #1f1f1f;
+  --text-secondary: #666;
+  --border: #e8e8e8;
+  --shadow: 0 2px 8px rgba(0,0,0,0.06);
+  --radius: 12px;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+}
+
+/* Header */
+.header {
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+  color: #fff;
+  padding: 24px 32px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+}
+.header-left h1 { font-size: 22px; font-weight: 600; letter-spacing: 1px; }
+.header-left .sub { font-size: 12px; opacity: 0.7; margin-top: 4px; }
+.header-right { display: flex; gap: 10px; }
+
+/* Buttons */
+.btn {
+  padding: 8px 18px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.btn-primary { background: var(--primary); color: #fff; }
+.btn-primary:hover { background: #4096ff; }
+.btn-outline { background: transparent; color: #fff; border: 1px solid rgba(255,255,255,0.3); }
+.btn-outline:hover { background: rgba(255,255,255,0.1); }
+.btn-success { background: var(--success); color: #fff; }
+.btn-success:hover { background: #73d13d; }
+.btn-danger { background: var(--danger); color: #fff; }
+.btn-danger:hover { background: #ff7875; }
+.btn-sm { padding: 4px 12px; font-size: 12px; }
+
+/* Main Container */
+.container { max-width: 1400px; margin: 0 auto; padding: 20px 24px; }
+
+/* Stats Bar */
+.stats-bar {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+.stat-card {
+  background: var(--card-bg);
+  border-radius: var(--radius);
+  padding: 16px 24px;
+  box-shadow: var(--shadow);
+  flex: 1;
+  min-width: 140px;
+  text-align: center;
+}
+.stat-card .num { font-size: 28px; font-weight: 700; color: var(--primary); }
+.stat-card .label { font-size: 12px; color: var(--text-secondary); margin-top: 4px; }
+
+/* Toolbar */
+.toolbar {
+  background: var(--card-bg);
+  border-radius: var(--radius);
+  padding: 16px 20px;
+  box-shadow: var(--shadow);
+  margin-bottom: 20px;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.toolbar .search-box {
+  flex: 1;
+  min-width: 280px;
+  position: relative;
+}
+.toolbar .search-box input {
+  width: 100%;
+  padding: 10px 14px 10px 36px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.toolbar .search-box input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(22,119,255,0.1); }
+.toolbar .search-box svg { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: #999; }
+.toolbar select {
+  padding: 9px 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 13px;
+  outline: none;
+  cursor: pointer;
+  background: #fff;
+  min-width: 140px;
+}
+
+/* Tag Filters */
+.tag-filters {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+.tag {
+  padding: 5px 14px;
+  border-radius: 20px;
+  font-size: 12px;
+  cursor: pointer;
+  border: 1px solid var(--border);
+  background: #fff;
+  color: var(--text-secondary);
+  transition: all 0.2s;
+  user-select: none;
+}
+.tag:hover { border-color: var(--primary); color: var(--primary); }
+.tag.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+
+/* Log Cards */
+.log-list { display: flex; flex-direction: column; gap: 12px; }
+
+.log-card {
+  background: var(--card-bg);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  transition: box-shadow 0.2s;
+  border-left: 4px solid transparent;
+}
+.log-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.1); }
+.log-card.sev-P0 { border-left-color: var(--danger); }
+.log-card.sev-P1 { border-left-color: var(--warning); }
+.log-card.sev-P2 { border-left-color: var(--primary); }
+.log-card.sev-P3 { border-left-color: #d9d9d9; }
+
+.log-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+}
+.log-card-header .left { display: flex; align-items: center; gap: 12px; }
+.log-card-header .module-tag {
+  background: var(--primary-light);
+  color: var(--primary);
+  padding: 3px 10px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+}
+.log-card-header .badge {
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+}
+.badge-P0 { background: #fff1f0; color: var(--danger); }
+.badge-P1 { background: #fff7e6; color: #d46b08; }
+.badge-P2 { background: var(--primary-light); color: var(--primary); }
+.badge-P3 { background: #f5f5f5; color: #999; }
+.log-card-header .title { font-weight: 600; font-size: 15px; flex: 1; }
+.log-card-header .meta { font-size: 12px; color: var(--text-secondary); display: flex; gap: 12px; align-items: center; }
+
+.log-card-body {
+  padding: 16px 20px;
+  display: none;
+}
+.log-card.expanded .log-card-body { display: block; }
+
+.log-field { margin-bottom: 12px; }
+.log-field:last-child { margin-bottom: 0; }
+.log-field .field-label {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-bottom: 4px;
+  font-weight: 500;
+}
+.log-field .field-value {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text);
+  background: #fafafa;
+  padding: 10px 14px;
+  border-radius: 6px;
+  white-space: pre-wrap;
+  word-break: break-all;
+  font-family: "SF Mono", "Consolas", "Monaco", monospace;
+  font-size: 13px;
+}
+.log-card-actions {
+  display: flex;
+  gap: 8px;
+  padding: 0 20px 14px;
+  justify-content: flex-end;
+}
+.log-card-actions.hidden { display: none; }
+.log-card.expanded .log-card-actions.hidden { display: flex; }
+
+/* Modal */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  top: 0; left: 0; width: 100%; height: 100%;
+  background: rgba(0,0,0,0.45);
+  z-index: 200;
+  justify-content: center;
+  align-items: flex-start;
+  padding-top: 40px;
+  overflow-y: auto;
+}
+.modal-overlay.show { display: flex; }
+.modal {
+  background: var(--card-bg);
+  border-radius: var(--radius);
+  width: 90%;
+  max-width: 720px;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.15);
+  margin-bottom: 40px;
+}
+.modal-header {
+  padding: 18px 24px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.modal-header h3 { font-size: 17px; font-weight: 600; }
+.modal-close {
+  width: 32px; height: 32px;
+  border: none;
+  background: #f5f5f5;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #666;
+  transition: all 0.2s;
+}
+.modal-close:hover { background: #e8e8e8; color: #333; }
+.modal-body { padding: 20px 24px; }
+.modal-body .form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 14px;
+}
+.modal-body .form-row.full { grid-template-columns: 1fr; }
+.modal-body label {
+  display: block;
+  font-size: 13px;
+  font-weight: 500;
+  margin-bottom: 5px;
+  color: var(--text);
+}
+.modal-body input, .modal-body select, .modal-body textarea {
+  width: 100%;
+  padding: 9px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 13px;
+  outline: none;
+  font-family: inherit;
+  transition: border-color 0.2s;
+}
+.modal-body input:focus, .modal-body select:focus, .modal-body textarea:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(22,119,255,0.1);
+}
+.modal-body textarea { resize: vertical; min-height: 80px; }
+.modal-footer {
+  padding: 14px 24px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+/* Empty state */
+.empty-state {
+  text-align: center;
+  padding: 80px 20px;
+  color: var(--text-secondary);
+}
+.empty-state svg { margin-bottom: 16px; opacity: 0.3; }
+.empty-state p { font-size: 15px; }
+
+/* Toast */
+.toast {
+  position: fixed;
+  top: 24px;
+  right: 24px;
+  background: #333;
+  color: #fff;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 13px;
+  z-index: 999;
+  opacity: 0;
+  transform: translateY(-10px);
+  transition: all 0.3s;
+}
+.toast.show { opacity: 1; transform: translateY(0); }
+
+/* Responsive */
+@media (max-width: 768px) {
+  .header { padding: 16px 16px; }
+  .header-left h1 { font-size: 18px; }
+  .container { padding: 12px; }
+  .modal-body .form-row { grid-template-columns: 1fr; }
+  .log-card-header { flex-direction: column; align-items: flex-start; gap: 8px; }
+  .log-card-header .meta { flex-wrap: wrap; }
+}
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+  <div class="header-left">
+    <h1>🧪 效贷生产日志知识库</h1>
+    <div class="sub">XiaoDai Production Log Knowledge Base</div>
+  </div>
+  <div class="header-right">
+    <button class="btn btn-outline" onclick="exportJSON()" title="导出 JSON">📥 导出</button>
+    <button class="btn btn-outline" onclick="importJSON()" title="导入 JSON">📤 导入</button>
+    <button class="btn btn-primary" onclick="openAddModal()">+ 新增日志</button>
+  </div>
+</div>
+
+<div class="container">
+  <!-- Stats -->
+  <div class="stats-bar">
+    <div class="stat-card"><div class="num" id="totalCount">0</div><div class="label">日志总数</div></div>
+    <div class="stat-card"><div class="num" id="moduleCount">0</div><div class="label">涉及模块</div></div>
+    <div class="stat-card"><div class="num" id="p0Count">0</div><div class="label">P0 严重问题</div></div>
+    <div class="stat-card"><div class="num" id="displayCount">0</div><div class="label">当前显示</div></div>
+  </div>
+
+  <!-- Toolbar -->
+  <div class="toolbar">
+    <div class="search-box">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input type="text" id="searchInput" placeholder="搜索问题描述、根因、解决方案..." oninput="applyFilters()">
+    </div>
+    <select id="moduleFilter" onchange="applyFilters()">
+      <option value="all">全部模块</option>
+    </select>
+    <select id="severityFilter" onchange="applyFilters()">
+      <option value="all">全部等级</option>
+      <option value="P0">P0 - 严重</option>
+      <option value="P1">P1 - 高</option>
+      <option value="P2">P2 - 中</option>
+      <option value="P3">P3 - 低</option>
+    </select>
+    <select id="envFilter" onchange="applyFilters()">
+      <option value="all">全部环境</option>
+      <option value="生产">生产</option>
+      <option value="预发布">预发布</option>
+      <option value="测试">测试</option>
+    </select>
+  </div>
+
+  <!-- Tag Filters -->
+  <div class="tag-filters" id="tagFilters"></div>
+
+  <!-- Log List -->
+  <div class="log-list" id="logList">
+    <div class="empty-state">
+      <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+      <p>暂无日志，点击右上角「+ 新增日志」开始记录</p>
+    </div>
+  </div>
+</div>
+
+<!-- Modal -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="modalTitle">新增生产日志</h3>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div>
+          <label>日期时间 *</label>
+          <input type="datetime-local" id="logDateTime">
+        </div>
+        <div>
+          <label>问题模块 *</label>
+          <select id="logModule">
+            <option value="">请选择模块</option>
+            <option value="进件">进件</option>
+            <option value="审批">审批</option>
+            <option value="拨款">拨款</option>
+            <option value="征信">征信</option>
+            <option value="额度测算">额度测算</option>
+            <option value="税号解析">税号解析</option>
+            <option value="域名">域名/网络</option>
+            <option value="登录/鉴权">登录/鉴权</option>
+            <option value="数据库">数据库</option>
+            <option value="消息推送">消息推送</option>
+            <option value="其他">其他</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div>
+          <label>严重等级 *</label>
+          <select id="logSeverity">
+            <option value="P2">P2 - 中</option>
+            <option value="P0">P0 - 严重（线上阻断）</option>
+            <option value="P1">P1 - 高（核心功能异常）</option>
+            <option value="P3">P3 - 低</option>
+          </select>
+        </div>
+        <div>
+          <label>影响范围/环境</label>
+          <select id="logEnv">
+            <option value="生产">生产</option>
+            <option value="预发布">预发布</option>
+            <option value="测试">测试</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row full">
+        <div>
+          <label>问题描述 *</label>
+          <textarea id="logDesc" placeholder="详细描述问题现象..."></textarea>
+        </div>
+      </div>
+      <div class="form-row full">
+        <div>
+          <label>根因分析</label>
+          <textarea id="logRootCause" placeholder="分析问题根本原因..."></textarea>
+        </div>
+      </div>
+      <div class="form-row full">
+        <div>
+          <label>解决方案/处理结果</label>
+          <textarea id="logSolution" placeholder="记录处理过程和最终解决方案..."></textarea>
+        </div>
+      </div>
+      <div class="form-row">
+        <div>
+          <label>处理人</label>
+          <input type="text" id="logHandler" placeholder="处理人姓名">
+        </div>
+        <div>
+          <label>关联需求/单号</label>
+          <input type="text" id="logRefId" placeholder="需求号或工单号">
+        </div>
+      </div>
+      <input type="hidden" id="editId">
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal()" style="background:#f5f5f5;color:#666;">取消</button>
+      <button class="btn btn-primary" onclick="saveLog()" id="saveBtn">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- Import file input -->
+<input type="file" id="importFile" accept=".json" style="display:none" onchange="handleImport(event)">
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ====== 种子数据（首次访问自动加载） ======
+var SEED_DATA = [{"id":"seed_xyd_001","datetime":"2026-06-25T10:00","module":"雨商贷","severity":"P2","env":"生产","description":"结算标识：授信通知同步时 existCustomer 为 true，订单对应「是否结算」为否","rootCause":"授信通知同步接口返回 existCustomer=true 表示存量客户，存量客户订单不参与结算","solution":"检查授信通知回调中 existCustomer 字段，为 true 时跳过结算逻辑","handler":"","refId":"","createdAt":"2026-06-25T10:00:00","updatedAt":"2026-06-25T10:00:00"},{"id":"seed_xyd_002","datetime":"2026-06-25T10:01","module":"雨商贷","severity":"P2","env":"生产","description":"可推荐产品配置：credit.quota.recommend.products=XYD100,ZBYH200,DSJR247,JDFIN100,HHXD100","rootCause":"额度测算推荐产品列表由配置项 credit.quota.recommend.products 控制","solution":"推荐产品五个：XYD100(小雨点)、ZBYH200(中邦银行)、DSJR247(大数金融)、JDFIN100(金蝶金融)、HHXD100(恒慧小贷)","handler":"","refId":"","createdAt":"2026-06-25T10:01:00","updatedAt":"2026-06-25T10:01:00"},{"id":"seed_xyd_003","datetime":"2026-06-25T10:02","module":"雨商贷","severity":"P2","env":"生产","description":"追加定时任务：product updateAddCreditOperableFlagJobHandler","rootCause":"更新可追加授信操作标识的定时任务处理器","solution":"定时任务入口为 product.updateAddCreditOperableFlagJobHandler，用于批量刷新客户的可追加授信状态标识","handler":"","refId":"","createdAt":"2026-06-25T10:02:00","updatedAt":"2026-06-25T10:02:00"},{"id":"seed_xyd_004","datetime":"2026-06-25T10:03","module":"雨商贷","severity":"P1","env":"生产","description":"授信状态通知：审批中 PENDING_MODEL_AUDIT","rootCause":"授信申请进入模型审批阶段，状态码 PENDING_MODEL_AUDIT","solution":"日志搜索关键词：PENDING_MODEL_AUDIT，表示审批中状态","handler":"","refId":"","createdAt":"2026-06-25T10:03:00","updatedAt":"2026-06-25T10:03:00"},{"id":"seed_xyd_005","datetime":"2026-06-25T10:04","module":"雨商贷","severity":"P1","env":"生产","description":"授信状态通知：初审通过 PENDING_FURTHER_INFO","rootCause":"初审通过但需补充资料，状态码 PENDING_FURTHER_INFO","solution":"日志搜索关键词：PENDING_FURTHER_INFO，表示初审通过待补充信息","handler":"","refId":"","createdAt":"2026-06-25T10:04:00","updatedAt":"2026-06-25T10:04:00"},{"id":"seed_xyd_006","datetime":"2026-06-25T10:05","module":"雨商贷","severity":"P1","env":"生产","description":"授信状态通知：审核通过 AUDIT_APPROVE","rootCause":"授信审批最终通过，状态码 AUDIT_APPROVE","solution":"日志搜索关键词：AUDIT_APPROVE，表示审核通过可进入签约放款流程","handler":"","refId":"","createdAt":"2026-06-25T10:05:00","updatedAt":"2026-06-25T10:05:00"},{"id":"seed_xyd_007","datetime":"2026-06-25T10:06","module":"雨商贷","severity":"P1","env":"生产","description":"授信状态通知：放款成功 LOAN_SUCCESS","rootCause":"放款完成，状态码 LOAN_SUCCESS","solution":"日志搜索关键词：LOAN_SUCCESS，表示放款已成功到账","handler":"","refId":"","createdAt":"2026-06-25T10:06:00","updatedAt":"2026-06-25T10:06:00"},{"id":"seed_xyd_008","datetime":"2026-06-25T10:07","module":"雨商贷","severity":"P2","env":"生产","description":"还款结果通知：paidOff = true 表示已完结","rootCause":"小雨点回调还款结果时 paidOff=true 代表该笔贷款已全部还清","solution":"日志搜索关键词：paidOff 为 true，确认还款计划已完结","handler":"","refId":"","createdAt":"2026-06-25T10:07:00","updatedAt":"2026-06-25T10:07:00"},{"id":"seed_xyd_009","datetime":"2026-06-25T10:08","module":"雨商贷","severity":"P1","env":"生产","description":"前筛：调用小雨点前筛接口 sendPreScreen","rootCause":"效贷调用小雨点前置筛选接口，请求地址 xyd/ignore/company/sendPreScreen","solution":"日志搜索：[小雨点]新-调用接口 AND xyd/ignore/company/sendPreScreen AND {企业名称}","handler":"","refId":"","createdAt":"2026-06-25T10:08:00","updatedAt":"2026-06-25T10:08:00"},{"id":"seed_xyd_010","datetime":"2026-06-25T10:09","module":"雨商贷","severity":"P1","env":"生产","description":"前筛结果回调：xiaoyudian/callback/preScreen-result","rootCause":"小雨点异步回调前筛结果，携带 orderNo 标识预筛订单号","solution":"日志搜索：xiaoyudian/callback/preScreen-result AND orderNo","handler":"","refId":"","createdAt":"2026-06-25T10:09:00","updatedAt":"2026-06-25T10:09:00"},{"id":"seed_xyd_011","datetime":"2026-06-25T10:10","module":"雨商贷","severity":"P1","env":"生产","description":"同步客户授信申请：sc-api/sign/xyd/ignore/sync/customer/info","rootCause":"效贷同步客户授信信息到小雨点，log标记 [小雨点]syncCustomerInfo","solution":"日志搜索：[小雨点]syncCustomerInfo AND {客户企业名称} 或 saveForCategory AND {企业名称}","handler":"","refId":"","createdAt":"2026-06-25T10:10:00","updatedAt":"2026-06-25T10:10:00"},{"id":"seed_xyd_012","datetime":"2026-06-25T10:11","module":"雨商贷","severity":"P1","env":"生产","description":"同步结果通知：xiaoyudian/callback/apply-result","rootCause":"小雨点回调客户授信申请结果，携带 optStatus 操作状态","solution":"日志搜索：xiaoyudian/callback/apply-result AND optStatus AND {订单号}","handler":"","refId":"","createdAt":"2026-06-25T10:11:00","updatedAt":"2026-06-25T10:11:00"},{"id":"seed_xyd_013","datetime":"2026-06-25T10:12","module":"雨商贷","severity":"P2","env":"生产","description":"前端展示同步结果：flow-product/apply/material/stateUpdate","rootCause":"效贷前端根据授信状态回调更新申请材料页面状态","solution":"日志搜索：flow-product/apply/material/stateUpdate AND resultMsg","handler":"","refId":"","createdAt":"2026-06-25T10:12:00","updatedAt":"2026-06-25T10:12:00"},{"id":"seed_xyd_014","datetime":"2026-06-25T10:13","module":"雨商贷","severity":"P2","env":"生产","description":"获取H5链接：sc-api/sign/xyd/ignore/get/h5","rootCause":"效贷调用小雨点获取H5签约页面链接，请求参数经过加密","solution":"日志搜索：sc-api/sign/xyd/ignore/get/h5 AND 加密前业务参数（注意查看加密前原文）","handler":"","refId":"","createdAt":"2026-06-25T10:13:00","updatedAt":"2026-06-25T10:13:00"},{"id":"seed_xyd_015","datetime":"2026-06-25T10:14","module":"雨商贷","severity":"P0","env":"生产","description":"放款通知：xiaoyudian/callback/loan-result","rootCause":"小雨点回调放款结果，携带 outerOrderNo 外部订单号","solution":"日志搜索：REQUEST AND xiaoyudian/callback/loan-result AND outerOrderNo AND {订单号}","handler":"","refId":"","createdAt":"2026-06-25T10:14:00","updatedAt":"2026-06-25T10:14:00"},{"id":"seed_xyd_016","datetime":"2026-06-25T10:15","module":"雨商贷","severity":"P0","env":"生产","description":"授信通知：/xiaoyudian/callback/approval-result","rootCause":"小雨点回调授信审批结果，携带 outerOrderNo 外部订单号","solution":"日志搜索：REQUEST AND /xiaoyudian/callback/approval-result AND outerOrderNo AND {订单号}","handler":"","refId":"","createdAt":"2026-06-25T10:15:00","updatedAt":"2026-06-25T10:15:00"},{"id":"seed_xyd_017","datetime":"2026-06-25T10:16","module":"雨商贷","severity":"P1","env":"生产","description":"是否可提额通知：canCreditAdjust 为 1 表示可以提额","rootCause":"授信审批回调中携带 canCreditAdjust 字段，值为1时可发起提额申请","solution":"日志搜索：REQUEST AND xiaoyudian/callback/approval-result AND canCreditAdjust（检查值是否为1）","handler":"","refId":"","createdAt":"2026-06-25T10:16:00","updatedAt":"2026-06-25T10:16:00"},{"id":"seed_xyd_018","datetime":"2026-06-25T10:17","module":"雨商贷","severity":"P1","env":"生产","description":"提额结果通知：审批回调中操作类型为 ADJUST","rootCause":"授信审批回调 operationType=ADJUST 表示提额操作的结果通知","solution":"日志搜索：REQUEST AND xiaoyudian/callback/approval-result AND ADJUST","handler":"","refId":"","createdAt":"2026-06-25T10:17:00","updatedAt":"2026-06-25T10:17:00"},{"id":"seed_xyd_019","datetime":"2026-06-25T10:18","module":"雨商贷","severity":"P1","env":"生产","description":"是否可追加授信通知：isAddCredit 为 1 表示可追加","rootCause":"审批回调中 AddCredit 字段 isAddCredit=1 时客户可追加授信","solution":"日志搜索：REQUEST AND xiaoyudian/callback/approval-result AND AddCredit（检查 isAddCredit 是否为1）","handler":"","refId":"","createdAt":"2026-06-25T10:18:00","updatedAt":"2026-06-25T10:18:00"},{"id":"seed_xyd_020","datetime":"2026-06-25T10:19","module":"雨商贷","severity":"P2","env":"生产","description":"还款计划通知：xiaoyudian/callback/repayment-result","rootCause":"小雨点回调还款计划结果通知","solution":"日志搜索：xiaoyudian/callback/repayment-result AND REQUEST AND {订单号}","handler":"","refId":"","createdAt":"2026-06-25T10:19:00","updatedAt":"2026-06-25T10:19:00"},{"id":"seed_xyd_021","datetime":"2026-06-25T10:20","module":"雨商贷","severity":"P1","env":"生产","description":"额度测算：签约流程 /fcloud/flow-user/credit/contract/sign 上上签","rootCause":"额度测算签约使用上上签服务，日志路径 /fcloud/flow-user/credit/contract/sign","solution":"日志搜索：/fcloud/flow-user/credit/contract/sign AND 上上签（排查签署流程锁占用问题）","handler":"","refId":"","createdAt":"2026-06-25T10:20:00","updatedAt":"2026-06-25T10:20:00"},{"id":"seed_xyd_022","datetime":"2026-06-25T10:21","module":"雨商贷","severity":"P1","env":"生产","description":"额度测算：凯旋征信查询流程锁占用","rootCause":"身份证签署流程锁被占用，kaixuan 征信查询可能存在并发锁冲突","solution":"日志搜索：kaixuan AND 身份证签署流程锁已被占用（注意并发签署场景下的锁释放）","handler":"","refId":"","createdAt":"2026-06-25T10:21:00","updatedAt":"2026-06-25T10:21:00"},{"id":"seed_xyd_023","datetime":"2026-06-25T10:22","module":"雨商贷","severity":"P2","env":"生产","description":"额度测算：凯旋征信短信发送","rootCause":"额度测算征信授权流程中通过 kaixuan 发送短信验证","solution":"日志搜索：kaixuan AND 短信（排查短信发送失败或用户未收到等问题）","handler":"","refId":"","createdAt":"2026-06-25T10:22:00","updatedAt":"2026-06-25T10:22:00"},{"id":"seed_xyd_024","datetime":"2026-06-25T10:23","module":"雨商贷","severity":"P1","env":"生产","description":"额度测算征信查询：泾渭云税号授权查询","rootCause":"额度测算通过泾渭云进行税号授权的征信查询","solution":"日志搜索：kaixuan] query result AND 授权 AND 泾渭云 AND 税号 AND {企业税号}","handler":"","refId":"","createdAt":"2026-06-25T10:23:00","updatedAt":"2026-06-25T10:23:00"}];
+
+// ====== 数据管理层 ======
+const STORAGE_KEY = 'xiaodai_production_logs';
+const SEED_LOADED_KEY = 'xiaodai_seed_loaded';
+
+function loadLogs() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) return JSON.parse(raw);
+    // 首次访问：加载种子数据
+    if (!localStorage.getItem(SEED_LOADED_KEY)) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(SEED_DATA));
+      localStorage.setItem(SEED_LOADED_KEY, '1');
+      return SEED_DATA;
+    }
+    return [];
+  } catch (e) {
+    return [];
+  }
+}
+
+function saveLogs(logs) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(logs));
+}
+
+let logs = loadLogs();
+let activeModuleTag = 'all';
+
+// ====== 渲染层 ======
+function formatDate(isoStr) {
+  if (!isoStr) return '-';
+  const d = new Date(isoStr);
+  const pad = n => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+function renderLogCard(log) {
+  const sevClass = `sev-${log.severity}`;
+  const badgeClass = `badge-${log.severity}`;
+  return `
+    <div class="log-card ${sevClass}" data-id="${log.id}" onclick="toggleCard(this, event)">
+      <div class="log-card-header">
+        <div class="left">
+          <span class="module-tag">${escapeHtml(log.module)}</span>
+          <span class="badge ${badgeClass}">${log.severity}</span>
+          <span class="title">${escapeHtml(log.description.substring(0, 60))}${log.description.length > 60 ? '...' : ''}</span>
+        </div>
+        <div class="meta">
+          <span>${formatDate(log.datetime)}</span>
+          <span>${escapeHtml(log.env || '生产')}</span>
+        </div>
+      </div>
+      <div class="log-card-body">
+        ${log.description ? `<div class="log-field"><div class="field-label">📝 问题描述</div><div class="field-value">${escapeHtml(log.description)}</div></div>` : ''}
+        ${log.rootCause ? `<div class="log-field"><div class="field-label">🔍 根因分析</div><div class="field-value">${escapeHtml(log.rootCause)}</div></div>` : ''}
+        ${log.solution ? `<div class="log-field"><div class="field-label">✅ 解决方案</div><div class="field-value">${escapeHtml(log.solution)}</div></div>` : ''}
+        ${log.handler || log.refId ? `
+          <div class="log-field">
+            <div class="field-label">📋 附加信息</div>
+            <div style="display:flex;gap:16px;font-size:13px;color:#666;">
+              ${log.handler ? `<span>处理人: ${escapeHtml(log.handler)}</span>` : ''}
+              ${log.refId ? `<span>关联单号: ${escapeHtml(log.refId)}</span>` : ''}
+            </div>
+          </div>
+        ` : ''}
+      </div>
+      <div class="log-card-actions hidden">
+        <button class="btn btn-sm btn-primary" onclick="event.stopPropagation();editLog('${log.id}')">✏️ 编辑</button>
+        <button class="btn btn-sm btn-danger" onclick="event.stopPropagation();deleteLog('${log.id}')">🗑 删除</button>
+      </div>
+    </div>
+  `;
+}
+
+function toggleCard(el, e) {
+  // ignore button clicks
+  if (e.target.tagName === 'BUTTON') return;
+  el.classList.toggle('expanded');
+}
+
+function escapeHtml(str) {
+  if (!str) return '';
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+function renderLogList(filteredLogs) {
+  const container = document.getElementById('logList');
+  if (filteredLogs.length === 0) {
+    container.innerHTML = `
+      <div class="empty-state">
+        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <p>没有匹配的日志记录</p>
+      </div>
+    `;
+  } else {
+    container.innerHTML = filteredLogs.map(renderLogCard).join('');
+  }
+}
+
+function renderTagFilters() {
+  const modules = [...new Set(logs.map(l => l.module).filter(Boolean))];
+  const container = document.getElementById('tagFilters');
+  let html = `<span class="tag ${activeModuleTag === 'all' ? 'active' : ''}" onclick="setModuleTag('all')">全部</span>`;
+  modules.forEach(m => {
+    html += `<span class="tag ${activeModuleTag === m ? 'active' : ''}" onclick="setModuleTag('${escapeHtml(m)}')">${escapeHtml(m)}</span>`;
+  });
+  container.innerHTML = html;
+}
+
+function updateStats(filteredLogs) {
+  document.getElementById('totalCount').textContent = logs.length;
+  const modules = new Set(logs.map(l => l.module).filter(Boolean));
+  document.getElementById('moduleCount').textContent = modules.size;
+  document.getElementById('p0Count').textContent = logs.filter(l => l.severity === 'P0').length;
+  document.getElementById('displayCount').textContent = filteredLogs.length;
+}
+
+function updateModuleFilter() {
+  const modules = [...new Set(logs.map(l => l.module).filter(Boolean))];
+  const sel = document.getElementById('moduleFilter');
+  sel.innerHTML = '<option value="all">全部模块</option>' + modules.map(m => `<option value="${escapeHtml(m)}">${escapeHtml(m)}</option>`).join('');
+  const currentVal = sel.value;
+  if (currentVal && !modules.includes(currentVal)) sel.value = 'all';
+}
+
+function applyFilters() {
+  const keyword = document.getElementById('searchInput').value.toLowerCase().trim();
+  const module = document.getElementById('moduleFilter').value;
+  const severity = document.getElementById('severityFilter').value;
+  const env = document.getElementById('envFilter').value;
+
+  let filtered = logs;
+
+  if (activeModuleTag !== 'all') {
+    filtered = filtered.filter(l => l.module === activeModuleTag);
+  }
+
+  if (module !== 'all') {
+    filtered = filtered.filter(l => l.module === module);
+  }
+
+  if (severity !== 'all') {
+    filtered = filtered.filter(l => l.severity === severity);
+  }
+
+  if (env !== 'all') {
+    filtered = filtered.filter(l => (l.env || '生产') === env);
+  }
+
+  if (keyword) {
+    filtered = filtered.filter(l => {
+      const fields = [l.description, l.rootCause, l.solution, l.handler, l.refId, l.module];
+      return fields.some(f => f && f.toLowerCase().includes(keyword));
+    });
+  }
+
+  // sort by datetime desc
+  filtered.sort((a, b) => (b.datetime || '').localeCompare(a.datetime || ''));
+
+  renderLogList(filtered);
+  updateStats(filtered);
+}
+
+function setModuleTag(tag) {
+  activeModuleTag = tag;
+  if (tag !== 'all') {
+    document.getElementById('searchInput').value = '';
+  }
+  renderTagFilters();
+  applyFilters();
+}
+
+// ====== CRUD 操作 ======
+function initModalFields() {
+  const now = new Date();
+  const pad = n => String(n).padStart(2, '0');
+  document.getElementById('logDateTime').value = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
+  document.getElementById('logModule').value = '';
+  document.getElementById('logSeverity').value = 'P2';
+  document.getElementById('logEnv').value = '生产';
+  document.getElementById('logDesc').value = '';
+  document.getElementById('logRootCause').value = '';
+  document.getElementById('logSolution').value = '';
+  document.getElementById('logHandler').value = '';
+  document.getElementById('logRefId').value = '';
+  document.getElementById('editId').value = '';
+}
+
+function openAddModal() {
+  document.getElementById('modalTitle').textContent = '新增生产日志';
+  document.getElementById('saveBtn').textContent = '保存';
+  initModalFields();
+  document.getElementById('modalOverlay').classList.add('show');
+}
+
+function editLog(id) {
+  const log = logs.find(l => l.id === id);
+  if (!log) return;
+  document.getElementById('modalTitle').textContent = '编辑生产日志';
+  document.getElementById('saveBtn').textContent = '更新';
+  document.getElementById('logDateTime').value = log.datetime || '';
+  document.getElementById('logModule').value = log.module || '';
+  document.getElementById('logSeverity').value = log.severity || 'P2';
+  document.getElementById('logEnv').value = log.env || '生产';
+  document.getElementById('logDesc').value = log.description || '';
+  document.getElementById('logRootCause').value = log.rootCause || '';
+  document.getElementById('logSolution').value = log.solution || '';
+  document.getElementById('logHandler').value = log.handler || '';
+  document.getElementById('logRefId').value = log.refId || '';
+  document.getElementById('editId').value = id;
+  document.getElementById('modalOverlay').classList.add('show');
+}
+
+function closeModal() {
+  document.getElementById('modalOverlay').classList.remove('show');
+}
+
+function saveLog() {
+  const datetime = document.getElementById('logDateTime').value;
+  const module = document.getElementById('logModule').value;
+  const severity = document.getElementById('logSeverity').value;
+  const env = document.getElementById('logEnv').value;
+  const description = document.getElementById('logDesc').value.trim();
+  const rootCause = document.getElementById('logRootCause').value.trim();
+  const solution = document.getElementById('logSolution').value.trim();
+  const handler = document.getElementById('logHandler').value.trim();
+  const refId = document.getElementById('logRefId').value.trim();
+  const editId = document.getElementById('editId').value;
+
+  if (!datetime || !module || !description) {
+    showToast('请填写日期时间、问题模块和问题描述');
+    return;
+  }
+
+  const logData = {
+    id: editId || 'log_' + Date.now(),
+    datetime,
+    module,
+    severity,
+    env,
+    description,
+    rootCause,
+    solution,
+    handler,
+    refId,
+    createdAt: editId ? (logs.find(l => l.id === editId)?.createdAt || new Date().toISOString()) : new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  };
+
+  if (editId) {
+    const idx = logs.findIndex(l => l.id === editId);
+    if (idx >= 0) logs[idx] = logData;
+  } else {
+    logs.unshift(logData);
+  }
+
+  saveLogs(logs);
+  closeModal();
+  refreshAll();
+  showToast(editId ? '日志已更新' : '日志已保存');
+}
+
+function deleteLog(id) {
+  if (!confirm('确定要删除这条日志吗？此操作不可撤销。')) return;
+  logs = logs.filter(l => l.id !== id);
+  saveLogs(logs);
+  refreshAll();
+  showToast('日志已删除');
+}
+
+function refreshAll() {
+  updateModuleFilter();
+  renderTagFilters();
+  applyFilters();
+}
+
+// ====== 导入导出 ======
+function exportJSON() {
+  if (logs.length === 0) {
+    showToast('没有日志可导出');
+    return;
+  }
+  const blob = new Blob([JSON.stringify(logs, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const now = new Date();
+  const ts = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}_${String(now.getHours()).padStart(2,'0')}${String(now.getMinutes()).padStart(2,'0')}`;
+  a.href = url;
+  a.download = `效贷生产日志_${ts}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast(`已导出 ${logs.length} 条日志`);
+}
+
+function importJSON() {
+  document.getElementById('importFile').click();
+}
+
+function handleImport(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const imported = JSON.parse(e.target.result);
+      if (!Array.isArray(imported)) throw new Error('格式错误');
+
+      const choice = confirm(`即将导入 ${imported.length} 条日志。\n选择「确定」合并导入，「取消」放弃操作。\n\n合并模式：相同ID的日志将被覆盖。`);
+      if (!choice) return;
+
+      // merge: same id overwrites
+      const idMap = new Map(logs.map(l => [l.id, l]));
+      imported.forEach(item => {
+        if (!item.id) item.id = 'log_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        idMap.set(item.id, item);
+      });
+      logs = Array.from(idMap.values());
+
+      saveLogs(logs);
+      refreshAll();
+      showToast(`成功导入 ${imported.length} 条日志`);
+    } catch (err) {
+      showToast('导入失败：文件格式不正确');
+    }
+  };
+  reader.readAsText(file);
+  event.target.value = '';
+}
+
+// ====== Toast ======
+let toastTimer;
+function showToast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2000);
+}
+
+// ====== 键盘快捷键 ======
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') closeModal();
+  if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+    e.preventDefault();
+    document.getElementById('searchInput').focus();
+  }
+  if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
+    e.preventDefault();
+    openAddModal();
+  }
+});
+
+// Close modal on overlay click
+document.getElementById('modalOverlay').addEventListener('click', function(e) {
+  if (e.target === this) closeModal();
+});
+
+// ====== 初始化 ======
+refreshAll();
+</script>
+
+</body>
+</html>
