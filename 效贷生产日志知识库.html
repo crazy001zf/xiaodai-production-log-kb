@@ -98,45 +98,23 @@ body {
 .quick-filter .pf:hover { border-color: var(--primary); color: var(--primary); }
 .quick-filter .pf.active { background: var(--primary); color: #fff; border-color: var(--primary); }
 
-/* Group card */
-.group {
+/* Group header row in table */
+.section-header td {
+  background: #fafafa;
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--text);
+  padding: 10px 14px;
+  border-bottom: 2px solid #e8e8e8;
+}
+
+/* Table wrapper */
+.table-wrap {
   background: var(--card-bg);
   border-radius: var(--radius);
   box-shadow: var(--shadow);
-  margin-bottom: 12px;
   overflow: hidden;
 }
-.group-header {
-  display: flex;
-  align-items: center;
-  padding: 12px 16px;
-  cursor: pointer;
-  user-select: none;
-  gap: 10px;
-  border-bottom: 1px solid transparent;
-  transition: background 0.15s;
-}
-.group-header:hover { background: #fafafa; }
-.group.open .group-header { border-bottom-color: var(--border); }
-.group-header .arrow {
-  transition: transform 0.2s;
-  font-size: 12px;
-  color: var(--text-tertiary);
-}
-.group.open .group-header .arrow { transform: rotate(90deg); }
-.group-header .gname {
-  font-weight: 600;
-  font-size: 14px;
-}
-.group-header .gcount {
-  font-size: 12px;
-  color: var(--text-tertiary);
-  background: #f5f5f5;
-  padding: 1px 8px;
-  border-radius: 10px;
-}
-.group-body { display: none; }
-.group.open .group-body { display: block; }
 
 /* Table */
 table {
@@ -630,7 +608,8 @@ function renderContent() {
   let totalVisible = 0;
   let totalAll = 0;
 
-  const html = groups.map(g => {
+  let rows = '';
+  groups.forEach(g => {
     const filteredItems = searchTerm
       ? g.items.filter(item => 
           item.scene.includes(searchTerm) || 
@@ -640,55 +619,34 @@ function renderContent() {
       : g.items;
     
     totalAll += g.items.length;
-    const visibleCount = filteredItems.length;
-    totalVisible += visibleCount;
-    
-    if (visibleCount === 0 && searchTerm) return '';
+    if (filteredItems.length === 0) return;
+    totalVisible += filteredItems.length;
 
-    return `
-    <div class="group${searchTerm ? ' open' : ''}">
-      <div class="group-header" onclick="this.parentElement.classList.toggle('open')">
-        <span class="arrow">▶</span>
-        <span class="gname">${g.name}</span>
-        <span class="gcount">${visibleCount}条</span>
-      </div>
-      <div class="group-body">
-        <table>
-          <thead>
-            <tr>
-              <th>业务场景</th>
-              <th>日志搜索关键词</th>
-              <th>操作</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${filteredItems.map((item, i) => `
-            <tr>
-              <td>${item.scene}</td>
-              <td>
-                <div class="copy-kw" onclick="copyKw(this, '${g.name}-${i}')" title="点击复制">${escapeHtml(item.keywords)}</div>
-              </td>
-              <td class="copy-btn">
-                <button onclick="event.stopPropagation(); copyKw(this.parentElement.previousElementSibling.querySelector('.copy-kw'), '${g.name}-${i}')">复制</button>
-              </td>
-            </tr>
-            `).join('')}
-          </tbody>
-        </table>
-      </div>
-    </div>`;
-  }).filter(Boolean).join('');
+    rows += `<tr class="section-header"><td colspan="3">${g.name}</td></tr>`;
+    filteredItems.forEach((item, i) => {
+      rows += `
+      <tr>
+        <td>${item.scene}</td>
+        <td>
+          <div class="copy-kw" onclick="copyKw(this)" title="点击复制">${escapeHtml(item.keywords)}</div>
+        </td>
+        <td class="copy-btn">
+          <button onclick="event.stopPropagation(); copyKw(this.parentElement.previousElementSibling.querySelector('.copy-kw'))">复制</button>
+        </td>
+      </tr>`;
+    });
+  });
 
-  content.innerHTML = html || '<div class="empty">没有匹配的记录</div>';
+  content.innerHTML = rows 
+    ? `<div class="table-wrap"><table><thead><tr><th>业务场景</th><th>日志搜索关键词</th><th>操作</th></tr></thead><tbody>${rows}</tbody></table></div>`
+    : '<div class="empty">没有匹配的记录</div>';
 
-  // Stats
   document.getElementById("statsBar").innerHTML = `
     共 <span>${totalVisible}</span> 条记录
     ${searchTerm ? ` / 筛选前 ${totalAll} 条` : ''}
   `;
 
-  // Update time
-  document.getElementById("updateTime").textContent = `更新：2026-06-25`;
+  document.getElementById("updateTime").textContent = `更新：2026-06-26`;
 }
 
 function escapeHtml(str) {
@@ -711,11 +669,11 @@ function setFilter(filter) {
   renderContent();
 }
 
-function copyKw(el, id) {
+function copyKw(el) {
   const text = el.textContent;
   navigator.clipboard.writeText(text).then(() => {
     el.classList.add('copied');
-    showToast('✅ 已复制到剪贴板');
+    showToast('已复制');
     setTimeout(() => el.classList.remove('copied'), 1500);
   });
 }
